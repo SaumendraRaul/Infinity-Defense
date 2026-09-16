@@ -6,7 +6,7 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   test:
@@ -16,7 +16,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Build browser bundle
+      - name: Build browser bundle and comic UI
         run: npm run build
       - name: Run regression suite
         run: npm test
+      - name: Publish generated static assets
+        if: github.event_name == 'push' && github.actor != 'github-actions[bot]'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/game.bundle.js dist/game-ui.css
+          if git diff --cached --quiet; then
+            echo "Generated assets already current."
+          else
+            git commit -m "Build V3.1 static assets"
+            git push
+          fi
